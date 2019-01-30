@@ -1,9 +1,9 @@
 How to Connect using Client Certificate Authentication
 ======================================================
 
-When establishing a secure connection to your messaging service, the client will validate that the certificate of the messaging service (the server certificate) is signed by a trusted certificate authority. The server certificate once validated confirms the identity of the server.
+When establishing a secure connection to your messaging service, the client will validate that the certificate of the messaging service (the server certificate) is signed by a trusted certificate authority. The server certificate, once validated, confirms the identity of the server.
 
-Your messaging service uses a server certificate that is signed by a highly trusted public certificate authority, and will be trusted in many environments (ex. browsers, Java Virtual Machine). For greater security, the client can also use a certificate to prove its identity. When the client connects, the server will validate that the certificate of the client is signed by a trusted certificate authority. This is called mutual or two-way authentication.
+Your messaging service uses a server certificate that is signed by a highly trusted public certificate authority and will be trusted in many environments (ex. browsers, Java Virtual Machine). For greater security, the client can also use a certificate to prove its identity. When the client connects, the server will validate that the certificate of the client is signed by a trusted certificate authority. This is called mutual or two-way authentication.
 
 Messaging services on Enterprise Plans (Kilo, Giga, Mega and Tera) support client-certificate based authentication. This tutorial will walk you through the steps of using client certificate authentication. It will use an MQTT client because MQTT is often used in IoT environments and client certificate authentication is common for IoT devices.
 
@@ -35,16 +35,16 @@ Before starting this tutorial make sure you have:
 Step 1: Create a Private Certificate Authority
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To create a private certificate authority (CA), we will use OpenSSL, which is included with most Linux-based operating systems and can be easily installed if it is not available. For details on installing OpenSSL, go `here <https://wiki.openssl.org/index.php/Binaries>`_.
+To create a private certificate authority (CA), we will use OpenSSL, which is included with most Linux-based operating systems and can be easily installed if it is not available. For details on installing OpenSSL, go `here <https://wiki.openssl.org/index.php/Binaries>`__.
 
 To create a private CA, follow the steps below.
 
-1. Generate a private key and a public certificate for the CA. The command below will generate two files, one for the private key and one for the public certificate.  The certificate will have a common name of *.messaging.solace.cloud. It is specified as part of the **-subj** parameter in the command line. If you would prefer to enter the common name and the other values interactively, omit the **-subj** parameter.
+1. Generate a private key and a public certificate for the CA. The command below will generate two files, one for the private key and one for the public certificate.  The certificate will have a common name of \*.messaging.solace.cloud. It is specified as part of the **-subj** parameter in the command line. If you would prefer to enter the common name and the other values interactively, omit the **-subj** parameter.
 ::
 
     openssl req -newkey rsa:2048 -nodes -keyout MyRootCaKey.key -x509 -days 365 -out MyRootCaCert.pem -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=*.messaging.solace.cloud"
 
-These files, the private key and the public certificate, are all you need for your private certificate authority. Make sure you store the private key file (MyRootCaKey.key) in a safe place. The certificate is public and will be uploaded to the messaging service later.
+The private key file and the public certificate file are all you need for your private certificate authority. Make sure you store the private key file (MyRootCaKey.key) in a safe place. The certificate is public and will be uploaded to the messaging service later.
 
 Step 2: Create a Client Certificate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,14 +53,17 @@ Once the private CA files are created, follow the steps below to create a client
 
 1. Create a private key for the client. The client private key file (client1.key) will be needed when the client connects to the messaging service. Keep this file secure.
 ::
+
     openssl genrsa -out client1.key 2048
 
 2. Create a certificate signing request (CSR) for the client. The common name for the client certficate will be client1.messaging.solace.cloud. The common name is important since it will be used to identify the client. As before, you can omit the **-subj** parameter to add the common name interactively.
 ::
+
     openssl req -new -key client1.key -out MyClient1.csr -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=client1.messaging.solace.cloud"
 
 3. Issue the client certificate using the private CA key and certificate created in the previous step. The certificate will be valid for 1 year.
 ::
+
     openssl x509 -req -in MyClient1.csr -CA MyRootCaCert.pem -CAkey MyRootCaKey.key -CAcreateserial -out clientCert1.pem -days 365 -sha256
 
 The following files created during this step need to be accessible by the client:
@@ -119,7 +122,7 @@ To upload a certificate for a trusted certificate authority, follow the steps be
 
 .. image:: ../img/ght_cert_pasted_cert.png
 
-5. Click on **Submit**. Once the certificate has been uploads, click on **OK**.
+5. Click on **Submit**. Once the certificate has been uploaded, click on **OK**.
 
 .. image:: ../img/ght_cert_after_upload.png
 
@@ -127,7 +130,7 @@ To upload a certificate for a trusted certificate authority, follow the steps be
 Step 5: Add Client Username for Client Certificate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now that our private CA has been added as a certificate authority, the messaging service will trust the client certificate we created. The client certificate establishes the identity of the client, which is represented by the common name in our client certificate (client1.messaging.solace.cloud). We must configure our messaging service to allow client with this identity to access our service. This is done by adding a client username that matches the common name of our certificate.
+Now that our private CA has been added as a certificate authority, the messaging service will trust the client certificate we created. The client certificate establishes the identity of the client, which is represented by the common name in our client certificate (client1.messaging.solace.cloud). We must configure our messaging service to allow a client with this identity to access our service. This is done by adding a client username that matches the common name of our client certificate.
 
 To create a client username, follow the steps below.
 
@@ -163,7 +166,7 @@ To create a client username, follow the steps below.
 Step 6: Gather Details for Connecting an MQTT Client
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The messaging service is now configured to authenticate a client using the client certificate we created in step 2. Before we can connect an MQTT client we need to gather some connectino details from our service. We need to know the host name and secure MQTT port for our service. We also need the certificate for the public CA using by the messaging service so that the client can validate our server certificate.
+The messaging service is now configured to authenticate a client using the client certificate we created in step 2. Before we can connect an MQTT client we need to gather some connectino details from our service. We need to know the host name and secure MQTT port for our service. We also need the certificate for the public CA used by the messaging service so that the client can validate our server certificate.
 
 **Note:** The certificate for the public CA is not needed in all cases. The CA certificate used to sign the server certificate is highly trusted and installed in most default trust stores. However, not all clients have access to a default trust store, especially IoT client which may be running in a minimally configured environment. The MQTT.fx tool that we will use in the next step requires that we specify the root CA certificate when using client certificates. If we were not using client certificates, the MQTT.fx tool would trust our server certificate (using the **CA signed server certificate** setting).
 
@@ -189,13 +192,13 @@ To gather connection information for an MQTT client, follow the steps below.
 Step 7: Connect an MQTT Client using the Client Certificate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The messaging service is configured to authenticate a client using the client certificate we created in step 2. We will now using the MQTT.fx tool to connect an MQTT client to our service using a client certificate. If you haven't already, you can download the MQTT.fx tool from `here <https://mqttfx.jensd.de/>`_.
+The messaging service is configured to authenticate a client using the client certificate we created in step 2. We will now using the MQTT.fx tool to connect an MQTT client to our service using a client certificate. If you haven't already, you can download the MQTT.fx tool from `here <https://mqttfx.jensd.de/>`__.
 
 To connect an MQTT client, follow the steps below.
 
 1. Start the MQTT.fx tool.
 
-2. Click on the settings icon.
+2. Click on the settings icon in the top bar, near the middle.
 
 .. image:: ../img/ght_cert_mqtt_settings.png
 
@@ -203,23 +206,25 @@ To connect an MQTT client, follow the steps below.
 
 .. image:: ../img/ght_cert_broker_settings.png
 
-4. Click on the **SSL/ghTLS** tab underneath the **MQTT Broker Profile Settings** section. Click on **Enable SSL/TLS**, then click on the **Self signed certificates** radio button.
+4. Click on the **SSL/TLS** tab underneath the **MQTT Broker Profile Settings** section. Click on **Enable SSL/TLS**, then click on the **Self signed certificates** radio button.
 
 .. image:: ../img/ght_cert_self_signed_tab.png
 
-5. In the **CA file** field enter the path to the public CA certificate you downloaded in the previous step. In the **Client Certificate File** field, enter the path to the client certificate you created in step 2. In the **Client Key File** field, enter the path to the client key you created in step 2. Select the **PEM Formatted** checkbox since all files are in PEM format.
+5. In the **CA File** field enter the path to the public CA certificate you downloaded in the previous step. In the **Client Certificate File** field, enter the path to the client certificate you created in step 2. In the **Client Key File** field, enter the path to the client key you created in step 2. Select the **PEM Formatted** checkbox since all files are in PEM format.
 
 .. image:: ../img/ght_cert_ssl_settings.png
 
 6. Click on **OK**.
 
-7. Click on the **Connect** button to connect the MQTT client to the messaging service using the client certificate.
+7. Click on the **Connect** button in top bar beside the settings icon to connect the MQTT client to the messaging service using the client certificate.
 
 .. image:: ../img/ght_cert_mqtt_connect.png
 
 8. When the client is successfully connected, the circular indicator in the top right turns green. Since the client is encrypted, a padlock icon also appears.
 
 .. image:: ../img/ght_cert_mqtt_connected.png
+
+9. You can use the MQTT.fx tool to publish and subscribe using the MQTT connection.
 
 
 Step 8: Learn more
